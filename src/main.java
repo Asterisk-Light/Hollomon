@@ -6,7 +6,7 @@ import java.net.Socket;
 import java.util.List;
 import java.util.Scanner;
 
-public class SimpleLoginClient {
+public class main {
 
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
@@ -84,11 +84,15 @@ public class SimpleLoginClient {
                         for (Card c : cards) {
                             System.out.println(c);
                         }
-                        // Example: out.println("LIST_CARDS");
                         break;
                     case "2":
                         System.out.println("Showing your credits...");
-                        // Example: out.println("SHOW_CREDITS");
+                        int credits = CreditsUtil.requestCredits(out, in);
+                        if (credits >= 0) {
+                            System.out.println("Your current credits: " + credits);
+                        } else {
+                            System.out.println("Failed to retrieve credits.");
+                        }
                         break;
                     case "3":
                         System.out.println("Listing available cards...");
