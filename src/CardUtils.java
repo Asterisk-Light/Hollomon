@@ -1,44 +1,53 @@
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.util.ArrayList;
-import java.util.List;
-
-class Card {
-    String id;
-    String name;
-    String rank;
-    int lastSalePrice;
-
-    public Card(String id, String name, String rank, int lastSalePrice) {
-        this.id = id;
-        this.name = name;
-        this.rank = rank;
-        this.lastSalePrice = lastSalePrice;
-    }
-
-    @Override
-    public String toString() {
-        return String.format("Card ID: %s, Name: %s, Rank: %s, Last Sale Price: %d", id, name, rank, lastSalePrice);
-    }
-}
+import java.io.*;
+import java.util.*;
 
 public class CardUtils {
 
+    // Define rank order map here
+    private static final Map<String, Integer> rankOrder = new HashMap<>();
+    static {
+        rankOrder.put("UNIQUE", 1);
+        rankOrder.put("RARE", 2);
+        rankOrder.put("UNCOMMON", 3);
+        rankOrder.put("COMMON", 4);
+        // Add other ranks as needed, assign higher numbers for lower priority
+    }
+
+    // Comparator for sorting cards by rank, name, and numeric ID
+    public static final Comparator<Card> CARD_COMPARATOR = (c1, c2) -> {
+        int rank1 = rankOrder.getOrDefault(c1.getRank(), Integer.MAX_VALUE);
+        int rank2 = rankOrder.getOrDefault(c2.getRank(), Integer.MAX_VALUE);
+
+        int rankCompare = Integer.compare(rank1, rank2);
+        if (rankCompare != 0) {
+            return rankCompare;
+        }
+
+        int nameCompare = c1.getName().compareTo(c2.getName());
+        if (nameCompare != 0) {
+            return nameCompare;
+        }
+
+        int id1 = Integer.parseInt(c1.getId());
+        int id2 = Integer.parseInt(c2.getId());
+        return Integer.compare(id1, id2);
+    };
+
     /**
-     * Reads cards from the server until "OK" line is received.
-     * Assumes the BufferedReader is positioned right after login success or after sending "CARDS" command.
+     * Reads cards from the server input stream until "OK" line is received.
+     * Each card is expected to be sent as 5 lines:
+     * "CARD", id, name, rank, lastSalePrice
      */
     public static List<Card> readCards(BufferedReader in) throws IOException {
         List<Card> cards = new ArrayList<>();
         String line;
 
         while ((line = in.readLine()) != null) {
-            if (line.equals("OK")) {
+            if ("OK".equals(line)) {
                 break; // End of card list
             }
 
-            if (line.equals("CARD")) {
+            if ("CARD".equals(line)) {
                 // Read next 4 lines for card details
                 String id = in.readLine();
                 String name = in.readLine();
@@ -68,5 +77,21 @@ public class CardUtils {
     public static List<Card> requestCards(PrintWriter out, BufferedReader in) throws IOException {
         out.println("CARDS");
         return readCards(in);
+    }
+
+    /**
+     * Requests cards from the server, sorts them by rank, name, and ID,
+     * then prints them out.
+     */
+    public static void printSortedCards(PrintWriter out, BufferedReader in) throws IOException {
+        List<Card> cards = requestCards(out, in);
+
+        // Sort cards using the predefined comparator
+        Collections.sort(cards, CARD_COMPARATOR);
+
+        // Print sorted cards
+        for (Card card : cards) {
+            System.out.println(card);
+        }
     }
 }

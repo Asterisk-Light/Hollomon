@@ -1,6 +1,4 @@
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.PrintWriter;
+import java.io.*;
 
 public class CreditsUtil {
 
@@ -15,7 +13,6 @@ public class CreditsUtil {
             if (line.equals("OK")) {
                 break;
             }
-            // Assume the first non-OK line is the credits amount
             if (creditsLine == null) {
                 creditsLine = line;
             }

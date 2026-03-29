@@ -1,12 +1,15 @@
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
+import java.io.*;
 import java.net.Socket;
 import java.util.List;
 import java.util.Scanner;
 
 public class main {
+
+    private static List<Card> requestOffers(PrintWriter out, BufferedReader in) throws Exception {
+        out.println("OFFERS");
+        return CardUtils.readCards(in);
+    }
+
 
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
@@ -31,7 +34,7 @@ public class main {
              PrintWriter out = new PrintWriter(new OutputStreamWriter(socket.getOutputStream()), true);
              BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
 
-            // Send login credentials
+            // Send login
             out.println(username.toLowerCase());
             out.println(password);
 
@@ -42,7 +45,6 @@ public class main {
             while ((responseLine = in.readLine()) != null) {
                 System.out.println("Server: " + responseLine);
 
-                // Adjust these conditions based on your server's actual messages
                 String lowerResp = responseLine.toLowerCase();
                 if (lowerResp.contains("welcome") || lowerResp.contains("success")) {
                     loginSuccess = true;
@@ -52,7 +54,6 @@ public class main {
                     return;  // Exit on failure
                 }
 
-                // If server sends other info or prompts, continue reading
             }
 
             if (!loginSuccess) {
@@ -61,16 +62,23 @@ public class main {
             }
 
             System.out.println("Login successful!");
+            CardBuyer cardBuyer = new CardBuyer(out, in);
 
             boolean exit = false;
             while (!exit) {
+                Thread.sleep(100);
+
+                while (in.ready()) {
+                    in.readLine();
+                }
+
                 System.out.println("\nUser Menu:");
                 System.out.println("1. list my cards");
                 System.out.println("2. show my credits");
                 System.out.println("3. list available cards");
                 System.out.println("4. buy card");
                 System.out.println("5. sell card");
-                System.out.println("6. auto-trading [optional]");
+                System.out.println("6. auto-trading");
                 System.out.println("7. exit");
                 System.out.print("Please enter your choice: ");
 
@@ -80,6 +88,7 @@ public class main {
                     case "1":
                         System.out.println("Listing your cards...");
                         List<Card> cards = CardUtils.requestCards(out, in);
+                        cards.sort(CardUtils.CARD_COMPARATOR);
                         System.out.println("Your cards:");
                         for (Card c : cards) {
                             System.out.println(c);
@@ -97,17 +106,50 @@ public class main {
                     case "3":
                         System.out.println("Listing available cards...");
                         // Example: out.println("LIST_AVAILABLE_CARDS");
+                        List<Card> offers = requestOffers(out, in);
+                        offers.sort(CardUtils.CARD_COMPARATOR);
+                        System.out.println("Available cards for sale:");
+                        for (Card card : offers) {
+                            System.out.println(card);
+                        }
                         break;
                     case "4":
-                        System.out.println("Buying a card...");
-                        // Example: out.println("BUY_CARD");
+                        System.out.print("Enter the card ID to buy: ");
+                        String cardIdToBuy = scanner.nextLine().trim();
+                        if (!cardIdToBuy.isEmpty()) {
+                            try {
+                                cardBuyer.buyCard(cardIdToBuy);
+                            } catch (Exception e) {
+                                System.err.println("Error while buying card: " + e.getMessage());
+                            }
+                        } else {
+                            System.out.println("Card ID cannot be empty.");
+                        }
                         break;
+
                     case "5":
                         System.out.println("Selling a card...");
-                        // Example: out.println("SELL_CARD");
+
+                        System.out.print("Enter card ID to sell: ");
+                        String cardId = scanner.nextLine().trim();
+
+                        System.out.print("Enter price to sell for: ");
+                        int price = Integer.parseInt(scanner.nextLine().trim());
+
+                        try {
+                            boolean success = CardSeller.sellCard(out, in, cardId, price);
+                            if (success) {
+                                System.out.println("Sell order placed successfully.");
+                            } else {
+                                System.out.println("Sell order failed.");
+                            }
+                        } catch (IOException e) {
+                            System.err.println("Error communicating with server: " + e.getMessage());
+                        }
+
                         break;
                     case "6":
-                        System.out.println("Auto-trading feature not implemented.");
+                        System.out.println("Auto-trading (Not working right now)");
                         break;
                     case "7":
                         System.out.println("Exiting...");
