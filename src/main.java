@@ -34,11 +34,11 @@ public class main {
              PrintWriter out = new PrintWriter(new OutputStreamWriter(socket.getOutputStream()), true);
              BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
 
-            // Send login
+            // sends login to server
             out.println(username.toLowerCase());
             out.println(password);
 
-            // Read server responses after login attempt
+
             String responseLine;
             boolean loginSuccess = false;
 
@@ -51,7 +51,7 @@ public class main {
                     break;
                 } else if (lowerResp.contains("fail") || lowerResp.contains("error") || lowerResp.contains("invalid")) {
                     System.err.println("Login failed: " + responseLine);
-                    return;  // Exit on failure
+                    return;
                 }
 
             }
